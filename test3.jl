@@ -1,18 +1,15 @@
+Icr = 10 
 
-println("count:", count)
-while count < 10 
-    println(count)
-    global count += 1
 
-end
-
-function test3()
-    println("start function")
-    while count < 10 
-        println(count)
-
+for i = 1:10 
+    while a > 0 
+        a -= 1
         println(a)
-        global count += 1
+        while b > 0 
+            b -= 1
+            println(b)
+        println(Icr)
+        end
     end
-    return count
 end
+

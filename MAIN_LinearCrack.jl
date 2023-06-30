@@ -80,15 +80,22 @@ Mi = 0
 end
 
 begin
-fig1 = Figure(backgroundcolor = RGBf(0.98,0.98,0.98) , resolution = (1000, 700))
+fig1 = Figure(backgroundcolor = RGBf(0.98,0.98,0.98) , resolution = (2000, 1500))
 ga = fig1[1,1] = GridLayout()
 gb = fig1[1,2] = GridLayout()
-title_name = [ "dps", "fps", "DisMid", "c", "Inertia(s)", "withTest"]
+title_name1 = [ "dps", "fps", "DisMid", "c", "Inertia(Crack(blue), eff(red))"] 
+title_name2 = [ "Original", "Shifted by Moment crack"]
 fig_monitor = Figure(resolution = (1200, 2000))
-axis_monitor1 = [Axis(ga[i,1], title = title_name[i]) for i in 1:5]
-axis_monitor2 = [Axis(gb[i,1]) for i in 1:2]
-# workflow follows fig 7 in the paper.
+x1 = ["P [N]", "P [N]", "P [N]", "P [N]", "P [N]"]
+y1 = ["dps [mm]", "fps [MPa]", "DisMid [mm]", "c [mm]", "Inertia [mm4]"]
+x2 = ["Displacement [mm]", "Displacement [mm]"]
+y2 = ["P [N]", "P [N]"]
+end
+axis_monitor1 = [Axis(ga[i,1], title = title_name1[i],ylabel = y1[i], xlabel = x1[i]) for i in 1:5]
+axis_monitor2 = [Axis(gb[i,1],title = title_name2[i],ylabel = y2[i], xlabel = x2[i], yticks = -400000.:2500:40000)  for i in 1:2]
 
+
+# workflow follows fig 7 in the paper.
 conv1 = 1
 counter1 = 0
 counter2 = 0
@@ -165,7 +172,6 @@ for i in eachindex(M)
 
     end
 
-    
     # δmid = getDeltamid()
     #record the history
     fps_history[i] = fps
@@ -188,17 +194,18 @@ scatter!(axis_monitor1[5], P, Ie_history, color = :red ,label = "Ie")
 scatter!(axis_monitor1[5], P, Icr_history, color = :blue, label= "Icr")
 #add verticle line on each plot for Mcr
 for i in 1:5
-    vlines!(axis_monitor1[i], [Mcr*2/Ls], color = :black, label = "Mcr")
+    vlines!(axis_monitor1[i], [Mcr*2/Ls], color = :black, label = "Mcr", linewidth = 5)
     #add verticle line for Mdec
     vlines!(axis_monitor1[i], [Mdec*2/Ls], color = :green, label = "Mdec")
+
 end
 
 #add legend
 
-
-end
-
-
+# elem_1 = [LineElement(color = :green, linestyle = nothing)]
+# elem_2 = [LineElement(color = :red, linestyle = nothing)]
+# leg = Legend(fig1[3, 1],[elem_1, elem_2],["Mdec", "Mcr"], patchsize = (35, 35))
+# leg.tellheight = true
 
 
 #compare the result with the test data.
@@ -208,16 +215,19 @@ df = DataFrame(df)
 test_P = df[!,2]
 test_d = df[!,3]
 
-# convert to mm and in
-dis_in = dis_history/25.4
+# convert to in to mm
+test_d = test_d .* 25.4
+
+test_P = test_P .* 4.44822
 
 # figure2 = Figure(resolution = (800, 600))
 # ax1 = Axis(figure2[1, 1], ylabel = "Load [lb]", xlabel = "Displacement [in]")
 # ax2 = Axis(figure2[2, 1], ylabel = "fps[MPa]", xlabel = "Displacement [in]")
 
-plot!(axis_monitor2[1],dis_in[1:end],P_lb[1:end], label = "calc", color = :blue)
+plot!(axis_monitor2[1],dis_history[1:end],P[1:end], label = "calc", color = :blue)
 plot!(axis_monitor2[1],test_d,test_P, label = "test", color = :red)
-plot!(axis_monitor2[2],dis_in[1:end],P_lb[1:end].-Mcr*2/L, label = "calc", color = :blue)
+
+plot!(axis_monitor2[2],dis_history[1:end],P[1:end].-Mcr*2/Ls, label = "calc", color = :blue)
 plot!(axis_monitor2[2],test_d,test_P, label = "test", color = :red)
 display(fig_monitor)
 # axislegend()
