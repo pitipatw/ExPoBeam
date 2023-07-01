@@ -238,4 +238,5 @@ display(fig_monitor)
 
 end
 display(fig1)
+display(fig2)
 save(joinpath(@__DIR__,"fig1.png"), fig1)
