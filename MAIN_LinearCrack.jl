@@ -55,42 +55,45 @@ begin
 end
 #Assume
 begin
-Icr = Itr
-fps = fpe
-dps = dps0
-Ω =  getOmega(Sec)
-#we could do Mcr = 0 , becuase we crack at the begining anyway. 
-Mcr = getMcr(Mat, Sec, f, Ω)
-# Mcr = 0.00001
-# Mcr = 10.0
-Ie = Itr
+    Icr = Itr
+    fps = fpe
+    dps = dps0
+    Ω =  getOmega(Sec)
+    #we could do Mcr = 0 , becuase we crack at the begining anyway. 
+    Mcr = getMcr(Mat, Sec, f, Ω)
+    # Mcr = 0.00001
+    # Mcr = 10.0
+    Ie = Itr
 end
 
 #These lines just to make the variables global
 begin
-Ωc = 0
-c  = 0
-Ac_req  = 0 
-Lc = 0
-fc = 0.0
-δ_mid = 0
-δ_dev = 0
-fc = 0.0
-Mi = 0
+    Ωc = 0
+    c  = 0
+    Ac_req  = 0 
+    Lc = 0
+    fc = 0.0
+    δ_mid = 0
+    δ_dev = 0
+    fc = 0.0
+    Mi = 0
 end
 
 begin
-fig1 = Figure(backgroundcolor = RGBf(0.98,0.98,0.98) , resolution = (2000, 1500))
-ga = fig1[1,1] = GridLayout()
-gb = fig1[1,2] = GridLayout()
-title_name1 = [ "dps", "fps", "DisMid", "c", "Inertia(Crack(blue), eff(red))"] 
-title_name2 = [ "Original", "Shifted by Moment crack"]
-fig_monitor = Figure(resolution = (1200, 2000))
-x1 = ["P [N]", "P [N]", "P [N]", "P [N]", "P [N]"]
-y1 = ["dps [mm]", "fps [MPa]", "DisMid [mm]", "c [mm]", "Inertia [mm4]"]
-x2 = ["Displacement [mm]", "Displacement [mm]"]
-y2 = ["P [N]", "P [N]"]
+    fig1 = Figure(backgroundcolor = RGBf(0.98,0.98,0.98) , resolution = (1500, 1500))
+    fig2 = Figure(backgroundcolor = RGBf(0.98,0.98,0.98) , resolution = (2000, 1500))
+    ga = fig1[1,1] = GridLayout()
+    # gb = fig1[1,2] = GridLayout()
+    gb = fig2[1,1] = GridLayout()
+    title_name1 = [ "dps", "fps", "DisMid", "c", "Inertia(Crack(blue), eff(red))"] 
+    title_name2 = [ "Original", "Shifted by Moment crack"]
+    fig_monitor = Figure(resolution = (1200, 2000))
+    x1 = ["P [N]", "P [N]", "P [N]", "P [N]", "P [N]"]
+    y1 = ["dps [mm]", "fps [MPa]", "DisMid [mm]", "c [mm]", "Inertia [mm4]"]
+    x2 = ["Displacement [mm]", "Displacement [mm]"]
+    y2 = ["P [N]", "P [N]"]
 end
+
 axis_monitor1 = [Axis(ga[i,1], title = title_name1[i],ylabel = y1[i], xlabel = x1[i]) for i in 1:5]
 axis_monitor2 = [Axis(gb[i,1],title = title_name2[i],ylabel = y2[i], xlabel = x2[i], yticks = -400000.:2500:40000)  for i in 1:2]
 
@@ -235,3 +238,4 @@ display(fig_monitor)
 
 end
 display(fig1)
+save(joinpath(@__DIR__,"fig1.png"), fig1)
