@@ -17,8 +17,19 @@ end
 """
 fpy is based on ASTM A421
 """
-function fps(fpe::Float64, fc′::Float64,ρₚ::Float64; fpy::Float64 = 1300.0)
-    out = minimum(fpe + 70.0 + fc′/(100.0*ρₚ), fpe + 420.0, fpy)
+function Fps(fpe::Float64, fc′::Float64,ρₚ::Float64; fpy::Float64 = 1300.0)
+    out = min(fpe + 70.0 + fc′/(100.0*ρₚ), fpe + 420.0, fpy)
     return out
 end
 
+function Get_fFtu(fFts::Float64, wu::Float64, CMOD3::Float64,fR1::Float64, fR3::Float64)
+    out = fFts - wu/CMOD3*(fFts-0.5*fR3 + 0.2*fR1)
+    return out 
+end
+"""
+fFtuk = fFtu
+fck = fc′
+"""
+function V(ρs::Float64, fck::Float64, fFtuk::Float64, γc::Float64, scp::Float64, k::Float64)
+    out = 0.18/γc*k*(100.0*ρs *(1.0 + 7.5*fFtuk/fctk)* fck)^(1/3)+0.15*scp
+return out/1000.
