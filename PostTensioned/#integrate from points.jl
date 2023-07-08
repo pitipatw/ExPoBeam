@@ -1,9 +1,10 @@
 #integrate from points
 using PolygonInbounds
 nodes = [0. 0.; 0. 10.; 10.0 10.0 ;10. 0.;]
+nodes = newnodes
 A = 1/2*10*10
-x = 0.:0.01:10.
-y = 0.:0.01:10.
+x = -2000.0:100.:2000.0
+y = -2000:100:1500.0
 points = Matrix{Float64}(undef, size(x)[1]*size(y)[1], 2)
 for i =1:size(x)[1]
     for j = 1:size(y)[1]
@@ -42,7 +43,7 @@ f3 = Figure(resolution = (800,600))
 ax3 = Axis(f3[1,1,] , xlabel = "x", ylabel = "y", aspect = DataAspect())
 p3 = scatter!(ax3, p_inpoly[:,1], p_inpoly[:,2], color = :red, markersize = 2)
 f3
-c = 0.0
+c = 5.0
 # dxdy = 1/size(p_inpoly)[1]
 dxdy = 0.01*0.01
 
@@ -52,9 +53,9 @@ for i =1:size(p_inpoly)[1]
     r = (y-c)
     inertia += r^2*dxdy
 end
-println(inertia)
-answer = 1/3*10^4
-println("result: ", answer)
+println("Calculated: ", inertia)
+answer = 1/12*10^4
+println("Answer ", answer)
 println("error: ", (answer-inertia)/answer*100, " %")
 println("result: ", 1/12*10^4)
 

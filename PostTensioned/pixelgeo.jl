@@ -49,7 +49,9 @@ end
 g1 = makepixel(2000,200,100)
 ptx1 = [i[1] for i in g1[1]]
 pty1 = [i[2] for i in g1[1]]
-
+#remove first point (0.0)
+ptx1 = ptx1[2:end]
+pty1 = pty1[2:end]
 # ptx = vcat(ptx1, -ptx1)
 # pty = vcat(pty1, pty1)
 
@@ -96,3 +98,43 @@ for i = 1:size(points)[1]
     end
 end
 f2
+
+newpoints1 = Matrix{Float64}(undef, size(nodes)[1], 2)
+# draw a full pixelframe section
+for i = 1:size(nodes)[1]
+    x = nodes[i,1]
+    y = nodes[i,2]
+    r = sqrt(x^2 + y^2)
+    θ = atand(y/x)
+    # if θ < 0
+    #     θ = -θ
+    # end
+    newθ = θ + 120.0
+    newx = r*cosd(newθ)
+    newy = r*sind(newθ)
+    newpoints1[i,:] = [newx, newy]
+end
+
+newpoints2 = Matrix{Float64}(undef, size(nodes)[1], 2)
+# draw a full pixelframe section
+for i = 1:size(nodes)[1]
+    x = nodes[i,1]
+    y = nodes[i,2]
+    r = sqrt(x^2 + y^2)
+    θ = atand(y/x)
+    # if θ < 0
+    #     θ = -θ
+    # end
+    newθ = θ + 240.0
+    newx = r*cosd(newθ)
+    newy = r*sind(newθ)
+    newpoints2[i,:] = [newx, newy]
+end
+
+f4 = Figure(resolution = (800, 800))
+ax4 = Axis(f4[1, 1], xlabel = "x", ylabel = "y", aspect = DataAspect())#, aspect = DataAspect(), xgrid = false, ygrid = false)
+scatter!(ax4, newpoints1[:,1],newpoints1[:,2], color = :red )
+scatter!(ax4, nodes[:,1],nodes[:,2], color = :blue )
+scatter!(ax4, newpoints2[:,1],newpoints2[:,2], color = :green )
+newnodes = vcat(nodes, newpoints1, newpoints2)
+f4
