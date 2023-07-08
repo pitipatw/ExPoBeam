@@ -7,7 +7,7 @@ t = thickness
 Lc = straight region of pixel (length before arc)
 n = number of discretizations for arc
 """
-function makepixel(L::Real, t::Real, Lc::Real; n = 10)
+function makepixel(L::Real, t::Real, Lc::Real; n = 100)
 
     #constants
     θ = pi/6
@@ -61,3 +61,38 @@ f1 = Figure(resolution = (800, 600))
 ax1 = Axis(f1[1, 1], xlabel = "x", ylabel = "y", aspect = DataAspect())#, aspect = DataAspect(), xgrid = false, ygrid = false)
 p1 = scatter!(ax1, ptx,pty, color = :red )
 f1
+
+using PolygonInbounds
+nodes = [ptx pty]
+x = 0.:100.:2000.
+y = -2000.:100.:2000.
+points = Matrix{Float64}(undef, size(x)[1]*size(y)[1], 2)
+for i =1:size(x)[1]
+    for j = 1:size(y)[1]
+        points[(i-1)*size(y)[1]+j,:] = [x[i], y[j]]
+    end
+end
+edges = Matrix{Int64}(undef, size(nodes)[1], 2)
+for i = 1:size(nodes)[1]
+    if i != size(nodes)[1]
+        edges[i,:] =  [i, i+1]
+    else 
+        edges[i,:] =  [i, 1]
+    end
+end
+edges #must be int!
+tol = 1e-1
+
+stat = inpoly2(points, nodes, edges, atol =tol)
+
+f2 = Figure(resolution = (800, 600))
+ax2 = Axis(f2[1, 1], xlabel = "x", ylabel = "y", aspect = DataAspect())#, aspect = DataAspect(), xgrid = false, ygrid = false)
+p2 = scatter!(ax2, ptx,pty, color = :red )
+for i = 1:size(points)[1]
+    if stat[i,1] == true
+        scatter!(ax2, points[i,1], points[i,2], color = :green, markersize = 2)
+    else
+        scatter!(ax2, points[i,1], points[i,2], color = :blue, markersize = 2)
+    end
+end
+f2
