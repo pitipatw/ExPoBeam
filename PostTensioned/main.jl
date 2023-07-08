@@ -114,10 +114,14 @@ vu = 0.75*vn
 c1 = δlimit > δmid 
 
 #second constraint, stress limit
+tenlim = -0.6*sqrt(fc′)
+comlim = 0.25*sqrt(fc′)
+
 #Initial (Post tensioning) stage (2)
 #tensionlimit
 ftopinit = -pi/ac + pi*e/st - mdead/st
-c2t = ftopinit <= somenuber
+
+c2t = ftopinit <= 1
 #compression limit
 fbotinit = -pi/ac - pi*e/st + mdead/sb
 c2c = fbotinit <= somenumber
