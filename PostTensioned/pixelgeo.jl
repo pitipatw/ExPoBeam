@@ -46,7 +46,7 @@ function makepixel(L::Real, t::Real, Lc::Real; n = 100)
 end
 
 
-g1 = makepixel(2000,200,100)
+g1 = makepixel(150,30,20)
 ptx1 = [i[1] for i in g1[1]]
 pty1 = [i[2] for i in g1[1]]
 #remove first point (0.0)
@@ -137,4 +137,7 @@ scatter!(ax4, newpoints1[:,1],newpoints1[:,2], color = :red )
 scatter!(ax4, nodes[:,1],nodes[:,2], color = :blue )
 scatter!(ax4, newpoints2[:,1],newpoints2[:,2], color = :green )
 newnodes = vcat(nodes, newpoints1, newpoints2)
+origin = Matrix{Float64}(undef, 1, 2)
+origin[1,:] = [0,0]
+# newnodes = vcat(origin,nodes)
 f4

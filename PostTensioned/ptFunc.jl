@@ -30,7 +30,7 @@ end
 fFtuk = fFtu
 fck = fc′
 """
-function get_v(ρs::Float64, fck::Float64, fFtuk::Float64, γc::Float64, scp::Float64, k::Float64)
+function get_v(ρs::Float64, fck::Float64,fctk::Float64, fFtuk::Float64, γc::Float64, scp::Float64, k::Float64)
     out = 0.18/γc*k*(100.0*ρs *(1.0 + 7.5*fFtuk/fctk)* fck)^(1/3)+0.15*scp
 return out/1000.
 end
