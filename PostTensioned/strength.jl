@@ -1,7 +1,50 @@
-#integrate from points
 using PolygonInbounds
-# nodes = [ptx pty] of the outline of the section
-nodes = [-75.0 -100.0; 75.0 -100.0; 75.0 100.0; -75.0 100.0 ]
+using Makie, GLMakie
+
+#Section definition
+# nodes = [ptx pty] is a matrix of the outline of the section centers at (0,0).
+# For example a 150 x 200 rectangular section would be:
+nodes = [-75.0 -100.0; 
+          75.0 -100.0;
+          75.0 100.0; 
+          -75.0 100.0 ]
+
+#or with a "makepixel" function.
+
+p1 = makepixel(150,30,20)[1]
+ptx = [i[1] for i in p1[2:end]]
+pty = [i[2] for i in p1[2:end]]
+p_right = [ptx pty]
+p_left = Matrix{Float64}(undef, size(p_right)[1], 2)
+p_top = Matrix{Float64}(undef, size(p_right)[1], 2)
+
+for i = 1:size(p_right)[1]
+    x = p_right[i,1]
+    y = p_right[i,2]
+    r = sqrt(x^2 + y^2)
+    θ = atand(y/x)
+
+    newθ = θ + 120.0
+    newx = r*cosd(newθ)
+    newy = r*sind(newθ)
+    p_top[i,:] = [newx, newy]
+
+    newθ = θ + 240.0
+    newx = r*cosd(newθ)
+    newy = r*sind(newθ)
+    p_left[i,:] = [newx, newy]
+end
+
+nodes = [p_right; p_top; p_left]
+
+#check the section
+s1 = Figure(resolution = (800,600))
+ax1 = Axis(s1[1,1], xlabel = "x", ylabel = "y", 
+        aspect = DataAspect(),
+        limits = (-205,205,-200,150))
+
+sec1 = scatter!(ax1, nodes[:,1], nodes[:,2], color = :red)
+s1
 # nodes = newnodes
 dx = 0.05
 dy = 0.05
