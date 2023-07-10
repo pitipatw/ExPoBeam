@@ -100,14 +100,14 @@ println("error: ", (answer-inertia)/answer*100, " %")
 
 
 #given area, get depths
-target_a = 2000.0
+target_a = 1500.0
 tol = 0.01
-for depth_ratio = 0.001:0.001:1
+for depth_ratio = 0:0.01:1
     #more efficient by adding more points?
     #if the points are sorted, we could continue?, but with each depth.
 
     chk = Vector{Bool}(undef, size(p_inpoly)[1])
-    c_pos = 80.0
+    @show c_pos = 100-depth_ratio*200.0
     for i =1:size(p_inpoly)[1]
         #could stop right away when the points violate the depth (move in sorted list)
         x = p_inpoly[i,1]
@@ -119,10 +119,11 @@ for depth_ratio = 0.001:0.001:1
         end
     end
     com_pts = p_inpoly[chk,:]
-    area =dx*dy*size(com_pts)[1]
+    @show area =dx*dy*size(com_pts)[1]
     @show diff = abs(area-target_a)/target_a
     if diff < tol 
+        println("the depth is at y = ", depth_ratio*200.0)
         break
     end
-
 end
+
