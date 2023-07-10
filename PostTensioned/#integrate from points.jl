@@ -7,6 +7,7 @@ dx = 0.05
 dy = 0.05
 x = -205.0:dx:205.0
 y = -200.0:dy:150.0
+#create a matrix of grid points.
 points = Matrix{Float64}(undef, size(x)[1]*size(y)[1], 2)
 for i =1:size(x)[1]
     for j = 1:size(y)[1]
@@ -98,3 +99,30 @@ println("error: ", (answer-inertia)/answer*100, " %")
 # ####################################
 
 
+#given area, get depths
+target_a = 2000.0
+tol = 0.01
+for depth_ratio = 0.001:0.001:1
+    #more efficient by adding more points?
+    #if the points are sorted, we could continue?, but with each depth.
+
+    chk = Vector{Bool}(undef, size(p_inpoly)[1])
+    c_pos = 80.0
+    for i =1:size(p_inpoly)[1]
+        #could stop right away when the points violate the depth (move in sorted list)
+        x = p_inpoly[i,1]
+        y = p_inpoly[i,2]
+        if y>c_pos
+            chk[i] = true
+        else
+            chk[i] = false
+        end
+    end
+    com_pts = p_inpoly[chk,:]
+    area =dx*dy*size(com_pts)[1]
+    @show diff = abs(area-target_a)/target_a
+    if diff < tol 
+        break
+    end
+
+end
