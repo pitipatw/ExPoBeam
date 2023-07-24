@@ -1,10 +1,12 @@
-#integrate from points
+#Numerical Integration.
+# Could implement gaussian quadrature here, but that's for later.
+
 using PolygonInbounds
 # nodes = [ptx pty] of the outline of the section
 nodes = [-75.0 -100.0; 75.0 -100.0; 75.0 100.0; -75.0 100.0 ]
 # nodes = newnodes
-dx = 0.05
-dy = 0.05
+dx = 0.1
+dy = 0.1
 x = -205.0:dx:205.0
 y = -200.0:dy:150.0
 #create a matrix of grid points.
@@ -14,6 +16,12 @@ for i =1:size(x)[1]
         points[(i-1)*size(y)[1]+j,:] = [x[i], y[j]]
     end
 end
+
+#this is a lot faster!!
+using GeometryTypes
+grid(ranges::NTuple{N, <: AbstractRange}) where N = Point.(Iterators.product(ranges...))
+p = grid((x,y))
+#connecting the points
 edges = Matrix{Int64}(undef, size(nodes)[1], 2)
 for i = 1:(size(nodes)[1]-1)
         edges[i,:] =  [i, i+1]

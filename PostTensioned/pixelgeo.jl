@@ -1,4 +1,7 @@
 using LinearAlgebra
+using PolygonInbounds
+using GeometryTypes
+using StaticArrays
 """
 By Keith JL.
     makepixel(L::Real, t::Real, Lc::Real; n = 10)
@@ -45,99 +48,212 @@ function makepixel(L::Real, t::Real, Lc::Real; n = 100)
     return points, p5, r
 end
 
+function fullpixel(L::Real, t::Real, Lc::Real; n = 100)
+    g1 = makepixel(L, t, Lc, n = n) ; 
+    ptx1 = [i[1] for i in g1[1]]
+    pty1 = [i[2] for i in g1[1]]
+    #remove first point (0.0)
+    ptx1 = ptx1[2:end]
+    pty1 = pty1[2:end]
+    # ptx = vcat(ptx1, -ptx1)
+    # pty = vcat(pty1, pty1)
+    
+    ptx = ptx1
+    pty = pty1
 
-g1 = makepixel(150,30,20)
-ptx1 = [i[1] for i in g1[1]]
-pty1 = [i[2] for i in g1[1]]
-#remove first point (0.0)
-ptx1 = ptx1[2:end]
-pty1 = pty1[2:end]
-# ptx = vcat(ptx1, -ptx1)
-# pty = vcat(pty1, pty1)
+    nodes = [ptx pty]
 
-ptx = ptx1
-pty = pty1
+    #rotate to the top
+    newpoints1 = Matrix{Float64}(undef, size(nodes)[1], 2)
+    # draw a full pixelframe section
+    for i = 1:size(nodes)[1]
+        x = nodes[i,1]
+        y = nodes[i,2]
+        r = sqrt(x^2 + y^2)
+        θ = atand(y/x)
 
-using Makie, GLMakie
-f1 = Figure(resolution = (800, 600))
-ax1 = Axis(f1[1, 1], xlabel = "x", ylabel = "y", aspect = DataAspect())#, aspect = DataAspect(), xgrid = false, ygrid = false)
-p1 = scatter!(ax1, ptx,pty, color = :red )
-f1
-
-using PolygonInbounds
-nodes = [ptx pty]
-x = 0.:100.:2000.
-y = -2000.:100.:2000.
-points = Matrix{Float64}(undef, size(x)[1]*size(y)[1], 2)
-for i =1:size(x)[1]
-    for j = 1:size(y)[1]
-        points[(i-1)*size(y)[1]+j,:] = [x[i], y[j]]
+        newθ = θ + 120.0
+        newx = r*cosd(newθ)
+        newy = r*sind(newθ)
+        newpoints1[i,:] = [newx, newy]
     end
+    
+    #rotate to the side (flip)
+    newpoints2 = Matrix{Float64}(undef, size(nodes)[1], 2)
+    # draw a full pixelframe section
+    for i = 1:size(nodes)[1]
+        x = nodes[i,1]
+        y = nodes[i,2]
+        r = sqrt(x^2 + y^2)
+        θ = atand(y/x)
+   
+        newθ = θ + 240.0
+        newx = r*cosd(newθ)
+        newy = r*sind(newθ)
+
+        newpoints2[i,:] = [newx, newy]
+    end
+
+    newnodes = vcat(nodes, newpoints1, newpoints2)
+
+    return newnodes
 end
-edges = Matrix{Int64}(undef, size(nodes)[1], 2)
-for i = 1:size(nodes)[1]
-    if i != size(nodes)[1]
+
+#Will have to make a half pixel here.
+
+function halfpixel(L::Real, t::Real, Lc::Real; n = 100)
+    println("Hang in there. I'm working on it.")
+end
+
+function vecvec_to_matrix(vecvec)
+    dim1 = length(vecvec)
+    dim2 = length(vecvec[1])
+    my_array = zeros(Float64, dim1, dim2)
+    for i in 1:dim1
+        for j in 1:dim2
+            my_array[i,j] = vecvec[i][j]
+        end
+    end
+    return my_array
+end
+
+function fillpoints(nodes::Matrix{Float64}, dx::Real, dy::Real)
+    #get bounding box
+    xmin = minimum(nodes[:,1])
+    xmax = maximum(nodes[:,1])
+    ymin = minimum(nodes[:,2])
+    ymax = maximum(nodes[:,2])
+
+    #create a matrix of grid points.
+    x = xmin:dx:xmax
+    y = ymin:dy:ymax
+
+    grid(ranges::NTuple{N, <: AbstractRange}) where N = GeometryTypes.Point.(Iterators.product(ranges...))
+    points = grid((x,y))
+
+    points = vec(collect.(points))
+    points = vecvec_to_matrix(points)
+    return points
+end
+
+function pointsinpixel(nodes::Matrix{Float64}, points::Matrix{Float64})
+
+    edges = Matrix{Int64}(undef, size(nodes)[1], 2)
+    for i = 1:(size(nodes)[1]-1)
         edges[i,:] =  [i, i+1]
-    else 
-        edges[i,:] =  [i, 1]
     end
-end
-edges #must be int!
-tol = 1e-1
+    edges[size(nodes)[1],:] = [size(nodes)[1], 1]
 
-stat = inpoly2(points, nodes, edges, atol =tol)
+    #check for nodes in the edge
 
-f2 = Figure(resolution = (800, 600))
-ax2 = Axis(f2[1, 1], xlabel = "x", ylabel = "y", aspect = DataAspect())#, aspect = DataAspect(), xgrid = false, ygrid = false)
-p2 = scatter!(ax2, ptx,pty, color = :red )
-for i = 1:size(points)[1]
-    if stat[i,1] == true
-        scatter!(ax2, points[i,1], points[i,2], color = :green, markersize = 2)
-    else
-        scatter!(ax2, points[i,1], points[i,2], color = :blue, markersize = 2)
-    end
-end
-f2
+    tol = 1e-1
+    stat = inpoly2(points, nodes, edges, atol =tol)
 
-newpoints1 = Matrix{Float64}(undef, size(nodes)[1], 2)
-# draw a full pixelframe section
-for i = 1:size(nodes)[1]
-    x = nodes[i,1]
-    y = nodes[i,2]
-    r = sqrt(x^2 + y^2)
-    θ = atand(y/x)
-    # if θ < 0
-    #     θ = -θ
-    # end
-    newθ = θ + 120.0
-    newx = r*cosd(newθ)
-    newy = r*sind(newθ)
-    newpoints1[i,:] = [newx, newy]
+    return stat[:,1]
 end
 
-newpoints2 = Matrix{Float64}(undef, size(nodes)[1], 2)
-# draw a full pixelframe section
-for i = 1:size(nodes)[1]
-    x = nodes[i,1]
-    y = nodes[i,2]
-    r = sqrt(x^2 + y^2)
-    θ = atand(y/x)
-    # if θ < 0
-    #     θ = -θ
-    # end
-    newθ = θ + 240.0
-    newx = r*cosd(newθ)
-    newy = r*sind(newθ)
-    newpoints2[i,:] = [newx, newy]
-end
 
-f4 = Figure(resolution = (800, 800))
-ax4 = Axis(f4[1, 1], xlabel = "x", ylabel = "y", aspect = DataAspect())#, aspect = DataAspect(), xgrid = false, ygrid = false)
-scatter!(ax4, newpoints1[:,1],newpoints1[:,2], color = :red )
-scatter!(ax4, nodes[:,1],nodes[:,2], color = :blue )
-scatter!(ax4, newpoints2[:,1],newpoints2[:,2], color = :green )
-newnodes = vcat(nodes, newpoints1, newpoints2)
-origin = Matrix{Float64}(undef, 1, 2)
-origin[1,:] = [0,0]
-# newnodes = vcat(origin,nodes)
-f4
+
+
+
+
+
+    
+
+# g1 = makepixel(150,30,20,)
+# ptx1 = [i[1] for i in g1[1]]
+# pty1 = [i[2] for i in g1[1]]
+# #remove first point (0.0)
+# ptx1 = ptx1[2:end]
+# pty1 = pty1[2:end]
+# # ptx = vcat(ptx1, -ptx1)
+# # pty = vcat(pty1, pty1)
+
+# ptx = ptx1
+# pty = pty1
+
+# using Makie, GLMakie
+# f1 = Figure(resolution = (800, 600))
+# ax1 = Axis(f1[1, 1], xlabel = "x", ylabel = "y", aspect = DataAspect())#, aspect = DataAspect(), xgrid = false, ygrid = false)
+# p1 = scatter!(ax1, ptx,pty, color = :red )
+# f1
+
+# using PolygonInbounds
+# nodes = [ptx pty]
+# x = 0.:100.:2000.
+# y = -2000.:100.:2000.
+# points = Matrix{Float64}(undef, size(x)[1]*size(y)[1], 2)
+# for i =1:size(x)[1]
+#     for j = 1:size(y)[1]
+#         points[(i-1)*size(y)[1]+j,:] = [x[i], y[j]]
+#     end
+# end
+# edges = Matrix{Int64}(undef, size(nodes)[1], 2)
+# for i = 1:size(nodes)[1]
+#     if i != size(nodes)[1]
+#         edges[i,:] =  [i, i+1]
+#     else 
+#         edges[i,:] =  [i, 1]
+#     end
+# end
+# edges #must be int!
+# tol = 1e-1
+
+# stat = inpoly2(points, nodes, edges, atol =tol)
+
+# f2 = Figure(resolution = (800, 600))
+# ax2 = Axis(f2[1, 1], xlabel = "x", ylabel = "y", aspect = DataAspect())#, aspect = DataAspect(), xgrid = false, ygrid = false)
+# p2 = scatter!(ax2, ptx,pty, color = :red )
+# for i = 1:size(points)[1]
+#     if stat[i,1] == true
+#         scatter!(ax2, points[i,1], points[i,2], color = :green, markersize = 2)
+#     else
+#         scatter!(ax2, points[i,1], points[i,2], color = :blue, markersize = 2)
+#     end
+# end
+# f2
+
+# newpoints1 = Matrix{Float64}(undef, size(nodes)[1], 2)
+# # draw a full pixelframe section
+# for i = 1:size(nodes)[1]
+#     x = nodes[i,1]
+#     y = nodes[i,2]
+#     r = sqrt(x^2 + y^2)
+#     θ = atand(y/x)
+#     # if θ < 0
+#     #     θ = -θ
+#     # end
+#     newθ = θ + 120.0
+#     newx = r*cosd(newθ)
+#     newy = r*sind(newθ)
+#     newpoints1[i,:] = [newx, newy]
+# end
+
+# newpoints2 = Matrix{Float64}(undef, size(nodes)[1], 2)
+# # draw a full pixelframe section
+# for i = 1:size(nodes)[1]
+#     x = nodes[i,1]
+#     y = nodes[i,2]
+#     r = sqrt(x^2 + y^2)
+#     θ = atand(y/x)
+#     # if θ < 0
+#     #     θ = -θ
+#     # end
+#     newθ = θ + 240.0
+#     newx = r*cosd(newθ)
+#     newy = r*sind(newθ)
+#     newpoints2[i,:] = [newx, newy]
+# end
+
+
+
+# # f4 = Figure(resolution = (800, 800))
+# # ax4 = Axis(f4[1, 1], xlabel = "x", ylabel = "y", aspect = DataAspect())#, aspect = DataAspect(), xgrid = false, ygrid = false)
+# # scatter!(ax4, newpoints1[:,1],newpoints1[:,2], color = :red )
+# # scatter!(ax4, nodes[:,1],nodes[:,2], color = :blue )
+# # scatter!(ax4, newpoints2[:,1],newpoints2[:,2], color = :green )
+# # newnodes = vcat(nodes, newpoints1, newpoints2)
+# # origin = Matrix{Float64}(undef, 1, 2)
+# # origin[1,:] = [0,0]
+# # # newnodes = vcat(origin,nodes)
+# # f4

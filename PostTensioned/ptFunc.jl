@@ -1,3 +1,7 @@
+#Post Tensioned Functions
+
+
+
 function β1(fc′::Float64)
     out = clamp(0.85 - 0.05*(fc′-28.0)/7, 0.65, 0.85)
     return out 
