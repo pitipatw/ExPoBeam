@@ -153,8 +153,74 @@ function pointsinpixel(nodes::Matrix{Float64}, points::Matrix{Float64})
 end
 
 
+function secprop(eval_pts::Matrix{Float64} , c::Float64; dx = 0.1, dy = 0.1)
+    #find moment of inertia of the point related to an axis y = c
+    # and cgy.
+    I = Vector{Float64}(undef, size(eval_pts)[1])
+    # Cgx = Vector{Float64}(undef, size(eval_pts)[1]) #Not interested now
+    Cgy = Vector{Float64}(undef, size(eval_pts)[1])
+    dxdy = dx*dy
+    area = size(eval_pts)[1]*dxdy
+    println("dx: ", dx, " dy: ", dy)
+    println("Area: ", area)
+
+    # @time @Threads.threads 
+    for i =1:size(eval_pts)[1]
+        # x = eval_pts[i,1]
+        y = eval_pts[i,2]
+        r = (y-c)
+        I[i] = r^2*dxdy
+        # Cgx[i] = x*dxdy
+        Cgy[i] = y*dxdy
+    end
+    # cgx = sum(Cgx)
+    cgy = sum(Cgy)/area
+    inertia = sum(I)
+    return (inertia, cgy)
+end
 
 
+function getdepth(p_inpoly::Matrix{Float64}, Acomp::Float64, nodes::Matrix{Float64}; tol::Float64 = 0.01)
+    target_a = Acomp
+    lb = 0
+    y_top = maximum(nodes[:, 2])
+    ub = maximum(nodes[:, 2]) - minimum(nodes[:, 2])
+    depth = (lb + ub) / 2 #initializing a variable
+    while true
+        #more efficient by adding more points?
+        #if the points are sorted, we could continue?, but with each depth.
+
+        chk = Vector{Bool}(undef, size(p_inpoly)[1])
+        c_pos = y_top - depth
+        for i = 1:size(p_inpoly)[1]
+            #could stop right away when the points violate the depth (move in sorted list)
+            x = p_inpoly[i, 1]
+            y = p_inpoly[i, 2]
+            if y > c_pos
+                chk[i] = true
+            else
+                chk[i] = false
+            end
+        end
+        com_pts = p_inpoly[chk, :]
+        @show area = dx * dy * size(com_pts)[1]
+        diff = abs(area - target_a) / target_a
+        if diff < tol
+            println("the depth is at y = ", depth)
+            println("tol is: ", diff)
+            break
+        elseif area - target_a > 1e-9
+            ub = depth
+            depth = (lb + ub) / 2
+        elseif area - target_a < 1e-9
+            lb = depth
+            depth = (lb + ub) / 2
+        end
+
+    end
+
+    return depth, chk
+end
 
 
 
