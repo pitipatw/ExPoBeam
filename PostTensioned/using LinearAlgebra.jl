@@ -1,5 +1,6 @@
 using LinearAlgebra
 using GeometryBasics
+using Makie, GLMakie
 """
     makepixel(L::Real, t::Real, Lc::Real; n = 10)
 L = length of pixel arm
@@ -48,5 +49,6 @@ end
 points = makepixel(150,10,10)
 
 f1 = Figure(resolution = (600, 600))
-ax1 = Axis(f1[1,1])
-poly(Point.(points))
+ax1 = Axis(f1[1,1], aspect = DataAspect(), xlabel = "x", ylabel = "y")
+poly!(Point2.(points))
+f1
