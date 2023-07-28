@@ -32,7 +32,7 @@ ftension = 0.17*sqrt(fc′)
 Ec = 4700.0*fc′^0.5 # concrete modulus of elasticity
 
 #PT steel information
-rps = 60.0 #[mm] radius of the strand
+rps = 6.0 #[mm] radius of the strand
 aps = 2* pi*rps^2 #[mm^2] area of the strand X 2 (2 sides)
 fpe = 119.753 #[MPa] effective prestress stress (after losses)
 e   = 0.77 #[-] eccentricity % of L (leg) from centroid (0,0)
@@ -76,15 +76,18 @@ pts = fullpixel(L, t, Lc);
 ytop = maximum(pts[:,2])
 ybot = minimum(pts[:,2])
 
+
 gridpts = fillpoints(pts, dx, dy)
 pixelpts = gridpts[pointsinpixel(pts, gridpts),:]
+I, cg = secprop(pixelpts,0.0)
+st = I/ytop
+sb = I/-ybot
 
 ac = size(pixelpts)[1]*dx*dy #[mm^2] #Total concrete area
 d = ytop - ybot #beamdepth
 ds = ytop - steelpos #depth of the steel from the top of the beam.
 
 #Calculation starts here.
-
 
 #Pure Compression Capacity
 ccn = 0.85*fc′*ac
@@ -161,29 +164,35 @@ println("#"^50)
 
 #Constraint check
 #Deflection limit
+
 #get from the march test model.
-
 δmid = 0.5 #(will have to work on this)
-
 δlimit = l/240.0 #[mm]
-
 #first constraint, deflection limit (1)
-c1 = δlimit > δmid 
+c1 = true # set to always true for now. δlimit > δmid 
 
 #second constraint, stress limit
-tenlim = -0.6*sqrt(fc′)
-comlim = 0.25*sqrt(fc′)
+tenlim = 0.6*sqrt(fc′)
+comlim = -0.25*sqrt(fc′)
 
 #Initial (Post tensioning) stage (2)
 #tensionlimit
-ftopinit = -pi/ac + pi*e/st - mdead/st
+pe = fpe*aps  ;
+ftopinit = -pe/ac + pe*L*e/st - mdead/st
 
-c2t = ftopinit <= 1
+c2t = tenlim > ftopinit > comlim
 #compression limit
-fbotinit = -pi/ac - pi*e/st + mdead/sb
-c2c = fbotinit <= somenumber
+fbotinit = -pe/ac - pe*L*e/sb + mdead/sb
+c2c = tenlim > fbotinit > comlim
 
 #Service stage (3)
 #compression limit
-ftopservice = -pi/ac + pi*e/st - mt/st
-c3 = 
+ftopservice = -pe/ac + pe*L*e/st - mtotal/st
+c3 = ftopservice > comlim
+if ftopservice > 0 
+    println("service tension happens to be in compression, please recheck")
+end
+
+limitchecks= [ c1, c2t, c2c, c3]
+limitcheck = all(limitchecks)
+
