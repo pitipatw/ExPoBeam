@@ -204,11 +204,11 @@ function getdepth(p_inpoly::Matrix{Float64}, Acomp::Float64, ys::Vector{Float64}
             end
         end
         com_pts = p_inpoly[chk, :]
-        @show area = dx * dy * size(com_pts)[1]
+        area = dx * dy * size(com_pts)[1]
         diff = abs(area - target_a) / target_a
         if diff < tol
-            println("the depth is at y = ", depth)
-            println("tol is: ", diff)
+            # println("the depth is at y = ", depth)
+            # println("tol is: ", diff)
             break
         elseif area - target_a > 1e-9
             ub = depth
