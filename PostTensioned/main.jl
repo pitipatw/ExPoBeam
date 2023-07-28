@@ -20,43 +20,66 @@ Therefore, shear will depend on the axial and will decresase if the applied axia
 
 using Printf
 
+include("pixelgeo.jl")
+
+begin
 #Concrete information
 fc′ = 133.7
+# ============= 
 ftension = 0.17*sqrt(fc′)
 ρc = 2400.0 # concrete density
 Ec = 4700.0*fc′^0.5 # concrete modulus of elasticity
 
 #PT steel information
-rps = 20.0 #[mm]
-aps = pi*rps^2 #[mm^2]
-fpe = 119.753 #[MPa]
-e   = 0.77 #[-]
-ep = 200_000.0 #[MPa]
+rps = 60.0 #[mm] radius of the strand
+aps = 2* pi*rps^2 #[mm^2] area of the strand X 2 (2 sides)
+fpe = 119.753 #[MPa] effective prestress stress (after losses)
+e   = 0.77 #[-] eccentricity % of L (leg) from centroid (0,0)
+steelpos = -L*e
+Ep = 200_000.0 #[MPa] modulus of elasticity of the strand
 
-"""
-need work
-"""
-#PixelFrame Section properties
-ac = 1000.0 #Total concrete area
+
+#Shear information
 shear_ratio = 0.3 #ratio of the section that resists shear to the total area.
-d = 500.0 #beamdepth
-#Serviceability parameters
-dl = 0.007 #[N/mm2]
-ll = 0.0048 #[N/mm2]
-baydepth = 2000.0 #[mm]
-l = 1500.0 #[mm]
 
 #Fiber information
 fR1 = 4.0
 fR3 = 3.5
 
-#Load information
-w_d = dl*baydepth #[N/mm]
-w_l = ll*baydepth #[N/mm]
-w_tot = w_d + w_l #[N/mm]
+#Serviceability parameters
+# bay sizes
+dl = 0.007 #[N/mm2] pressure dead load
+ll = 0.0048 #[N/mm2] pressure live load
+baydepth = 2000.0 #[mm] bay depth
+l = 1500.0 #[mm] length of the beam
 
-mdead = w_d*l^2/8.0 #[Nmm]
-mtotal = w_tot*l^2/8.0 #[Nmm]
+#Load information
+w_d = dl*baydepth #[N/mm] uniformly distributed dead load
+w_l = ll*baydepth #[N/mm] uniformly distributed live load
+w_tot = w_d + w_l #[N/mm] total uniformly distributed load
+
+mdead = w_d*l^2/8.0 #[Nmm] moment from the dead load
+mtotal = w_tot*l^2/8.0 #[Nmm] moment from the total load
+
+end
+"""
+need work
+"""
+#PixelFrame Section properties
+L = 300.0; # [mm] length of the pixel frame
+t = 10.0; # [mm] thickness of the pixel frame
+Lc = 30.0; # [mm] length of the straight.
+dx = 0.1; 
+dy = 0.1;
+pts = fullpixel(L, t, Lc);
+ytop = maximum(pts[:,2])
+ybot = minimum(pts[:,2])
+
+gridpts = fillpoints(pts, dx, dy)
+pixelpts = gridpts[pointsinpixel(pts, gridpts),:]
+
+ac = size(pixelpts)[1]*dx*dy #[mm^2] #Total concrete area
+d = ytop - ybot #beamdepth
 
 
 
@@ -64,24 +87,41 @@ mtotal = w_tot*l^2/8.0 #[Nmm]
 
 
 #Pure Compression Capacity
-ccn = 0.85*fc′*ap
-pn = (ccn - (fpe - 0.003*ep)*aps) / 1000 #[kN]
+ccn = 0.85*fc′*ac
+#need a justification on 0.003 Ep
+pn = (ccn - (fpe - 0.003*Ep)*aps) / 1000 #[kN]
 pu = 0.65*0.8*pn #[kN]
 ptforce = pu #[kN]
 @printf "The pure compression capacity is %.3f [kN]\n" pu
 
 #Pure Moment Capacity
-fps  =Fps
+
+#From ACI318M-19 Table: 20.3.2.4.1
+ρ = aps/ac #reinforcement ratio (Asteel/Aconcrete)
+fps1 = fpe + 70+ fc′/(100*ρ) #
+fps2 = fpe + 420
+fps3 = 1300.0 #Yield str of steel from ASTM A421
+fps  = minimum([fps1, fps2, fps3])
+
 acomp = aps*fps/(0.85*fc′)
-arm = d - c
+depth, chk = getdepth(pixelpts, acomp, [ytop,ybot])
+
+ptscomp = pixelpts[chk,:]
+inertia, cgcomp = secprop(ptscomp,0.0)
+arm = cgcomp - steelpos 
 mn_steel = aps*fps*arm/1e6
 
+#Recheck with concrete.
 mn_conc = 0.0 #***NEED WORK***
 #check if mn_conc is possible.
 
 mu = Φ(ϵ)*mn_steel #[kNmm]
 
 @printf "The pure moment capacity is %.3f [kNmm]\n" mu
+
+
+
+
 
 #Shear Calculation
 ashear = ap*shear_ratio
@@ -91,7 +131,7 @@ k = clamp(sqrt(200.0/d),0,2.)
 fFts = 0.45*fR1
 wu = 1.5
 CMOD3 = 1.5
-ned = ptforce
+ned = ptforce# can be different
 σcp1 = ned/ac
 σcp2 = 0.2*fc′
 σcp = clamp(σcp1, 0.0, σcp2)
