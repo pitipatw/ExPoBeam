@@ -180,29 +180,39 @@ function secprop(eval_pts::Matrix{Float64} , c::Float64; dx = 0.1, dy = 0.1)
 end
 
 
-function getdepth(p_inpoly::Matrix{Float64}, Acomp::Float64, ys::Vector{Float64}; tol::Float64 = 0.01)
+function getdepth(p_inpoly::Matrix{Float64}, Acomp::Float64, ys::Vector{Float64}; tol::Float64 = 0.01, dx = 0.1, dy = 0.1)
     target_a = Acomp
     y_top = ys[1]
     y_bot = ys[2]
     ub = y_top - y_bot
     lb = 0.0
     depth = (lb + ub) / 2 #initializing a variable
+    counter = 0
     while true
+        counter +=1 
+        if counter > 1000 
+            println("Exceed 1000 iterations")
+            return depth, chk
+        end
+
         #more efficient by adding more points?
         #if the points are sorted, we could continue?, but with each depth.
 
         global chk = Vector{Bool}(undef, size(p_inpoly)[1])
         c_pos = y_top - depth
-        for i = 1:size(p_inpoly)[1]
-            #could stop right away when the points violate the depth (move in sorted list)
-            # x = p_inpoly[i, 1]
-            y = p_inpoly[i, 2]
-            if y > c_pos
-                global chk[i] = true
-            else
-                global chk[i] = false
-            end
-        end
+        ys = p_inpoly[:, 2]
+        chk = ys .> c_pos
+        # for i = 1:size(p_inpoly)[1]
+        #     #can do matrix operation here.
+        #     #could stop right away when the points violate the depth (move in sorted list)
+        #     # x = p_inpoly[i, 1]
+        #     y = p_inpoly[i, 2]
+        #     if y > c_pos
+        #         global chk[i] = true
+        #     else
+        #         global chk[i] = false
+        #     end
+        # end
         com_pts = p_inpoly[chk, :]
         area = dx * dy * size(com_pts)[1]
         diff = abs(area - target_a) / target_a

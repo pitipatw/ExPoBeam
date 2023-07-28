@@ -48,7 +48,7 @@ include("ptFunc.jl")
 
 
 
-function sampleme(fc′::Float64, aps::Float64, L::Float64, t::Float64, Lc::Float64, fpe::Float64, e::Float64,
+function sampleme(fc′::Float64, aps::Float64, nodes::Matrix{Float64},L::Float64, fpe::Float64, e::Float64,
     l::Float64, baydepth::Float64, fR1::Float64, fR3::Float64)
     #could also be fpe
 
@@ -101,7 +101,7 @@ function sampleme(fc′::Float64, aps::Float64, L::Float64, t::Float64, Lc::Floa
     # Lc = 30.0 # [mm] length of the straight.
     dx = 0.1
     dy = 0.1
-    pts = fullpixel(L, t, Lc)
+    pts = nodes
     ytop = maximum(pts[:, 2])
     ybot = minimum(pts[:, 2])
 
