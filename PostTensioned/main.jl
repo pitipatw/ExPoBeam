@@ -1,4 +1,5 @@
 #This file is derived from Grasshopper work in 4.450 Fall 2022 class. 
+
 """
 To do 
 1. get Centroid of a PixelFrame
@@ -10,8 +11,7 @@ with Centroid as a function of "c" -> Excel
     c_to_I
 
 get ARM of the section.
-"""
-"""
+
 Notes
 Shaer strength depends on the current applied axial force
 Therefore, shear will depend on the axial and will decresase if the applied axial force decreases.
@@ -21,6 +21,7 @@ Therefore, shear will depend on the axial and will decresase if the applied axia
 using Printf
 
 include("pixelgeo.jl")
+include("ptFunc.jl")
 
 begin
 #Concrete information
@@ -35,7 +36,7 @@ rps = 60.0 #[mm] radius of the strand
 aps = 2* pi*rps^2 #[mm^2] area of the strand X 2 (2 sides)
 fpe = 119.753 #[MPa] effective prestress stress (after losses)
 e   = 0.77 #[-] eccentricity % of L (leg) from centroid (0,0)
-steelpos = -L*e
+steelpos = -L*e #[mm] position of the steel from the centroid of the section, y coordinate.
 Ep = 200_000.0 #[MPa] modulus of elasticity of the strand
 
 
@@ -80,8 +81,7 @@ pixelpts = gridpts[pointsinpixel(pts, gridpts),:]
 
 ac = size(pixelpts)[1]*dx*dy #[mm^2] #Total concrete area
 d = ytop - ybot #beamdepth
-
-
+ds = ytop - steelpos #depth of the steel from the top of the beam.
 
 #Calculation starts here.
 
@@ -93,6 +93,7 @@ pn = (ccn - (fpe - 0.003*Ep)*aps) / 1000 #[kN]
 pu = 0.65*0.8*pn #[kN]
 ptforce = pu #[kN]
 @printf "The pure compression capacity is %.3f [kN]\n" pu
+println("#"^50)
 
 #Pure Moment Capacity
 
@@ -103,42 +104,58 @@ fps2 = fpe + 420
 fps3 = 1300.0 #Yield str of steel from ASTM A421
 fps  = minimum([fps1, fps2, fps3])
 
+#concrete compression area balanced with steel tension force.
 acomp = aps*fps/(0.85*fc′)
+#get the depth of the compression area, in the form of y coordinate.
 depth, chk = getdepth(pixelpts, acomp, [ytop,ybot])
 
+#set of points that represent the compression area.
 ptscomp = pixelpts[chk,:]
-inertia, cgcomp = secprop(ptscomp,0.0)
+
+#calculate the moment arm.
+#get cgy of the compression area.
+~, cgcomp = secprop(ptscomp,0.0)
+#moment arm of the section is the distance between the centroid of the compression area and the steel.
 arm = cgcomp - steelpos 
-mn_steel = aps*fps*arm/1e6
+mn_steel = aps*fps*arm/1e6 #[kNm]
 
 #Recheck with concrete.
-mn_conc = 0.0 #***NEED WORK***
-#check if mn_conc is possible.
+#check compression strain, make sure it's not more than 0.003
+c = depth;
+ϵs = fps/Ep;
+ϵc = c*ϵs/(ds - c);
 
-mu = Φ(ϵ)*mn_steel #[kNmm]
+if ϵc > 0.003 
+    println("Compression strain is more than 0.003")
+    println("Please rework with the section")
+end
 
-@printf "The pure moment capacity is %.3f [kNmm]\n" mu
 
+mu = Φ(ϵs)*mn_steel #[kNmm]
+
+@printf "The pure moment capacity is %.3f [kNm]\n" mu
+println("#"^50)
 
 
 
 
 #Shear Calculation
-ashear = ap*shear_ratio
-fctk = ftension
-ρs = aps/ashear
-k = clamp(sqrt(200.0/d),0,2.)
-fFts = 0.45*fR1
-wu = 1.5
-CMOD3 = 1.5
-ned = ptforce# can be different
-σcp1 = ned/ac
-σcp2 = 0.2*fc′
-σcp = clamp(σcp1, 0.0, σcp2)
-fFtu = get_fFtu(fFts, wu, CMOD3, fR1, fR3)
-vn = ashear*get_v(ρs, fc′,fctk, fFtu, 1.0, σcp1, k) #kN
-vu = 0.75*vn 
+ashear = ac*shear_ratio;
+fctk = ftension;
+ρs = aps/ashear;
+k = clamp(sqrt(200.0/d),0,2.);
+fFts = 0.45*fR1;
+wu = 1.5;
+CMOD3 = 1.5;
+ned = ptforce;# can be different
+σcp1 = ned/ac;
+σcp2 = 0.2*fc′;
+σcp = clamp(σcp1, 0.0, σcp2);
+fFtu = get_fFtu(fFts, wu, CMOD3, fR1, fR3);
+vn = ashear*get_v(ρs, fc′,fctk, fFtu, 1.0, σcp1, k) ;#kN
+vu = 0.75*vn ;
 
+println("#"^50)
 @printf "The shear capacity is %.3f [kN]\n" vu
 
 

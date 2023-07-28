@@ -161,8 +161,8 @@ function secprop(eval_pts::Matrix{Float64} , c::Float64; dx = 0.1, dy = 0.1)
     Cgy = Vector{Float64}(undef, size(eval_pts)[1])
     dxdy = dx*dy
     area = size(eval_pts)[1]*dxdy
-    println("dx: ", dx, " dy: ", dy)
-    println("Area: ", area)
+    # println("dx: ", dx, " dy: ", dy)
+    # println("Area: ", area)
 
     # @time @Threads.threads 
     for i =1:size(eval_pts)[1]
@@ -180,26 +180,27 @@ function secprop(eval_pts::Matrix{Float64} , c::Float64; dx = 0.1, dy = 0.1)
 end
 
 
-function getdepth(p_inpoly::Matrix{Float64}, Acomp::Float64, nodes::Matrix{Float64}; tol::Float64 = 0.01)
+function getdepth(p_inpoly::Matrix{Float64}, Acomp::Float64, ys::Vector{Float64}; tol::Float64 = 0.01)
     target_a = Acomp
-    lb = 0
-    y_top = maximum(nodes[:, 2])
-    ub = maximum(nodes[:, 2]) - minimum(nodes[:, 2])
+    y_top = ys[1]
+    y_bot = ys[2]
+    ub = y_top - y_bot
+    lb = 0.0
     depth = (lb + ub) / 2 #initializing a variable
     while true
         #more efficient by adding more points?
         #if the points are sorted, we could continue?, but with each depth.
 
-        chk = Vector{Bool}(undef, size(p_inpoly)[1])
+        global chk = Vector{Bool}(undef, size(p_inpoly)[1])
         c_pos = y_top - depth
         for i = 1:size(p_inpoly)[1]
             #could stop right away when the points violate the depth (move in sorted list)
-            x = p_inpoly[i, 1]
+            # x = p_inpoly[i, 1]
             y = p_inpoly[i, 2]
             if y > c_pos
-                chk[i] = true
+                global chk[i] = true
             else
-                chk[i] = false
+                global chk[i] = false
             end
         end
         com_pts = p_inpoly[chk, :]
