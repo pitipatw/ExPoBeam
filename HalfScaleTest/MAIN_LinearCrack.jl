@@ -209,7 +209,7 @@ end
 # elem_2 = [LineElement(color = :red, linestyle = nothing)]
 # leg = Legend(fig1[3, 1],[elem_1, elem_2],["Mdec", "Mcr"], patchsize = (35, 35))
 # leg.tellheight = true
-
+fig1
 
 #compare the result with the test data.
 begin
@@ -232,15 +232,18 @@ plot!(axis_monitor2[1],test_d,test_P, label = "test", color = :red)
 
 plot!(axis_monitor2[2],dis_history[1:end],P[1:end].-Mcr*2/Ls, label = "calc", color = :blue)
 plot!(axis_monitor2[2],test_d,test_P, label = "test", color = :red)
-display(fig_monitor)
+# display(fig_monitor)
+
 
 fig3 = Figure(resolution = (800, 600))
 ax3 = Axis(fig3[1, 1], ylabel = "Force Diff [N]", xlabel = "Displacement [mm]")
-plot!(ax3,dis_history[1:end],P[1:end].-Mcr*2/Ls .- test_P, label = "calc", color = :blue)
+plot!(ax3,dis_history[1:end],P[1:end].-Mcr*2/Ls, label = "calc", color = :blue)
+plot!(axis_monitor2[2], dis_history, dis_history.*1000, label = "dis/1000", color = :green, markersize = 1)
 #plot 
 
 end
 display(fig1)
 display(fig2)
+display(fig3)
 save(joinpath(@__DIR__,"fig1.png"), fig1)
 save(joinpath(@__DIR__,"fig2.png"), fig2)

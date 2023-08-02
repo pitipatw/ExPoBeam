@@ -6,7 +6,7 @@ csv file dataformat is A,C
 """
 function get_C(A::Float64)
     #read the csv file
-    filename = "Tables/table_AtoC.csv" #Make sure you got csv in the name
+    filename = "table_AtoC.csv" #Make sure you got csv in the name
     data = CSV.read(filename,DataFrame)
     #get the column of A
     A_data = data[:,1]
@@ -27,7 +27,7 @@ csv file dataformat is C,Icrack
 """
 function get_Icrack(C::Float64)
     #read the csv file
-    filename = "Tables/table_CtoIcrack.csv" #Make sure you got csv in the name
+    filename = "table_CtoIcrack.csv" #Make sure you got csv in the name
     data = CSV.read(filename, DataFrame)
     #get the column of C
     C_data = data[:,1]
