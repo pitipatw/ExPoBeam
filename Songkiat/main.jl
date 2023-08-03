@@ -63,7 +63,11 @@ tendon_pos = tendonprofile() # [mm] distance from the bottom of the section
 
 
 ϵc_old = 0.0
+tol = 1e-6
+while abs(total_ϵc - δf) < tol
+    ϵc_mid += δϵc
 #section should have started at the middle.
+total_ϵc == δf 
 for l in setL #moment equilibrium in each sub section
     moment = momentval(l)
     tol = 1e-6
