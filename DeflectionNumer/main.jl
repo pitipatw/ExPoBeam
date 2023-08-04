@@ -5,9 +5,10 @@
 b = 200.0 # [mm] width of the section
 h = 400.0 # [mm] height of the section
 L = 2000.0 # [mm] length of the section
-nL = 10
+nL = 10 #10-30 is recommended by Alkhairi (1991) where 1 is at the mid span.
 dL = L/nL
 setL = 0:L/nL:L # [mm] distance from the left end of the section
+inx = 1:1:nL
 
 println("There are ", nL, " elements")
 Es = 200_000
@@ -30,26 +31,47 @@ function momentval(x::Float64)
     end
     return moment
 end
-#a function for concrete strain value
-# 1956 equation by Smith and Young
-#Smith, G.M.; Young, L.E. Ultimate flexural analysis on stress-strain curves for cylinders. ACI J. Proc. 1956, 53, 597–609.
-function σc(ϵ::Float64;fc′::Float64 = 28.0, ϵ0::Float64 = 0.003 )
-    σ = fc′/ϵ0*exp(1-ϵ/ϵ0)
-    return σ
+
+#Stress-strain curve of concrete (fc -ϵc) of concrete by Scott et al. (1982)
+function getfc(ϵ::Float64 ; fc′::Float64 = 28.0)
+    if ϵ <= 0.002
+        fc  = fc′ * (2*ϵ/0.002 - (ϵ/0.002)^2)
+    elseif ϵ > 0.002
+        Z = 0.5 / ( ((3 + 0.29*fc′)/145*fc′ ) - 0.002)  
+        fc = clamp( fc′ * ( 1 - Z*(ϵ-0.002)), 0.2-fc′, Inf )  # fc shall not be less than 0.2*fc′
+    else
+        println("Recheck ϵ")
+    end
+
+    return fc
 end
 
+#Stress-strain curve of steel (fs -ϵs) of steel by Menegotto and Pinto (1973)
+function getfps(ϵ::Float64 ; 
+    K::Float64 = 1.0618,
+    Q::Float64 = 0.01174, 
+    R::Float64 = 7.1344,
+    fpy::Float64 = 1_585.,
+    Eps::Float64 = 193_000.)
+    #Constants are for Grade 270, 7-wire strands)
+    
+    ϵ_star = ϵ * Eps / K/fpy
+    fps = ϵ*Eps*(Q + ( 1 - Q)/(1 + ϵ_star^R)^(1/R))
 
-
-
-# f1 = Figure(resolution = (800,600))
-# ax1 = Axis(f1[1,1], xlabel = "Distance [mm]", ylabel = "Moment [Nmm]")
-# scatter!(ax1, setL, momentval.(setL), label = "Moment")
+    return fps
+end
 
 #Check the cocnret and steel stress/strain curve.
-x =  0:0.0001:0.005
-f2 = Figure(resolution = (800,600))
-ax1 = Axis(f2[1,1], xlabel = "Strain", ylabel = "Stress")
-plot!(ax1,x,σc.(x) , label = "Concrete")
+
+# x1 =  0:0.00005:0.005
+# x2 = 0:0.00005:0.5
+# f2 = Figure(resolution = (800,600))
+# ax1 = Axis(f2[1,1], xlabel = "Strain", ylabel = "Stress", title ="Concrete Stress-Strain Curve")
+# ax2 = Axis(f2[1,2], xlabel = "Strain", ylabel = "Stress", title ="Steel Stress-Strain Curve")
+# plot!(ax1,x1,getfc.(x1) , label = "Concrete")
+# plot!(ax2,x2,getfps.(x2) , label = "Steel")
+# f2
+# save(joinpath(@__DIR__,"stress-strain.png"), f2)
 
 
 
