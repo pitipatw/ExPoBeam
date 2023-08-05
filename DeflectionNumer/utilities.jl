@@ -1,4 +1,6 @@
 using CSV,  DataFrames
+using InverseFunctions
+
 function checkeq(ϵc::Float64 , ϵs::Float64, m::Float64)
      #loop depth
      
@@ -33,4 +35,12 @@ function tendonprofile()
     return df[!,2]
 end
 
+"""
+get depth of the section given the area of the concrete
+"""
+function getdepth(ac::Float64)
+    depth = ac/200.0
+
+    return depth
+end
 

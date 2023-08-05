@@ -46,6 +46,17 @@ function getfc(ϵ::Float64 ; fc′::Float64 = 28.0)
     return fc
 end
 
+getfc(10.)
+
+function getϵ(fc::Float64) 
+    #brute force
+    ϵdummy = 0.0:0.00001:1.0
+    fc_ϵ = getfc.(ϵdummy)
+    ϵ = ϵdummy[findall(x-> abs(x-fc) < 1e-6, fc_ϵ)[1]]
+    return ϵ
+end
+
+
 #Stress-strain curve of steel (fs -ϵs) of steel by Menegotto and Pinto (1973)
 function getfps(ϵ::Float64 ; 
     K::Float64 = 1.0618,
@@ -60,6 +71,7 @@ function getfps(ϵ::Float64 ;
 
     return fps
 end
+
 
 #Check the cocnret and steel stress/strain curve.
 
@@ -81,19 +93,60 @@ fpe = 200.0 #MPa
 force = fpe * as
 
 #we can get tendon position at each distance. 
-tendon_pos = tendonprofile() # [mm] distance from the bottom of the section
+tendon_pos = tendonprofile() # [mm] distance from the centroid of the section
 
 
-ϵc_old = 0.0
+#Assumption based on initial condition
+ϵc_assump = 0.0 # 
+fpse_assump = 200.0 
 tol = 1e-6
+
+i = 1 
+k = 1 
+
+
+#Steel force
+fsteel = fpse_assump * as
+#0.85 - 0.65 based on the fc' value
+
+#at the critical section
+ac = fsteel/(0.85*getfc(ϵc_assump)) # [mm2] area of the concrete
+c = getdepth(ac) #work on this measure from the extreme compressive fiber (top) 
+
+#moment at the critical section 
+mc = fsteel * c - fsteel * d_c # [Nmm] moment at the critical section
+
+#get M from other places.
+for i = 2:nL #middle point already calculated, so start from 2.
+    mi = momentval(setL[i])
+    di = tendon_pos[i]
+    fsteel = fpse_assump * as
+    arm = mi/fsteel
+    cg = d - arm
+    c = 2*cg 
+    #get ac from c 
+    ac = 200.0 # dummy, getac(c)
+    fc = fsteel/(0.85*ac)
+    # from c get a
+    ac = fsteel/(0.85*getfc(ϵc_assump)) # [mm2] area of the concrete
+
+
+
 while abs(total_ϵc - δf) < tol
+    #force equilibrium
+
+    
+    
+    
     ϵc_mid += δϵc
+
+
 #section should have started at the middle.
 total_ϵc == δf 
 for l in setL #moment equilibrium in each sub section
     moment = momentval(l)
     tol = 1e-6
-    ϵci = ϵc_old 
+    ϵci = ϵc_initial 
 
     #moment equilibrium
 
