@@ -1,3 +1,5 @@
+include("utilities.jl")
+
 δϵc = 100e-6
 
 #let's start with a rectangular section
@@ -22,9 +24,9 @@ as = 50.0 # [mm2] area of the steel
 #a function that input distance, output moment value
 function momentval(x::Float64)
     if x <500.0
-        moment = 500.0
+        moment = 200.0
     elseif x <= 2000.0
-        moment = 500.0 - (x-500.0)/(2000.0-500.0)*500.0
+        moment = 200.0 - (x-500.0)/(2000.0-500.0)*200.0
     else
         moment = 0.0
         println("check x = ", x)
@@ -32,13 +34,19 @@ function momentval(x::Float64)
     return moment
 end
 
-#Stress-strain curve of concrete (fc -ϵc) of concrete by Scott et al. (1982)
-function getfc(ϵ::Float64 ; fc′::Float64 = 28.0)
+"""
+Stress-strain curve of concrete (fc -ϵc) of concrete by Scott et al. (1982)
+Stress max at 0003 at specified strength [MPa]
+"""
+function getfc(ϵ::Float64 ; fc′::Float64 = 35.0)
     if ϵ <= 0.002
         fc  = fc′ * (2*ϵ/0.002 - (ϵ/0.002)^2)
     elseif ϵ > 0.002
         Z = 0.5 / ( ((3 + 0.29*fc′)/145*fc′ ) - 0.002)  
         fc = clamp( fc′ * ( 1 - Z*(ϵ-0.002)), 0.2-fc′, Inf )  # fc shall not be less than 0.2*fc′
+        # if ϵ > 0.003
+        #     println("Recheck ϵ")
+        # end
     else
         println("Recheck ϵ")
     end
@@ -46,18 +54,25 @@ function getfc(ϵ::Float64 ; fc′::Float64 = 28.0)
     return fc
 end
 
-getfc(10.)
 
-function getϵ(fc::Float64) 
+"""
+get \epsilon_c from f_c
+"""
+function getϵ(fc::Float64; fc′::Float64 = 35.0) 
     #brute force
-    ϵdummy = 0.0:0.00001:1.0
-    fc_ϵ = getfc.(ϵdummy)
-    ϵ = ϵdummy[findall(x-> abs(x-fc) < 1e-6, fc_ϵ)[1]]
+    ϵdummy = 0.0:0.0000001:0.003
+    fc_ϵ = getfc.(ϵdummy, fc′= fc′)
+    ϵ = ϵdummy[findall(x-> abs(x-fc) < 1e-1, fc_ϵ)[1]]
     return ϵ
 end
 
+getfc(0.0025)
+getϵ(28.)
 
-#Stress-strain curve of steel (fs -ϵs) of steel by Menegotto and Pinto (1973)
+
+"""
+Stress-strain curve of steel (fs -ϵs) of steel by Menegotto and Pinto (1973)
+"""
 function getfps(ϵ::Float64 ; 
     K::Float64 = 1.0618,
     Q::Float64 = 0.01174, 
@@ -94,19 +109,27 @@ force = fpe * as
 
 #we can get tendon position at each distance. 
 tendon_pos = tendonprofile() # [mm] distance from the centroid of the section
-
+begin
 
 #Assumption based on initial condition
-ϵc_assump = 0.0 # 
+ϵc_assump = δϵc # 
 fpse_assump = 200.0 
+df = fpse_assump/Es
 tol = 1e-6
-
-i = 1 
-k = 1 
-
-
+δf = df
+ϵc_total = 0.003
+δf_history = Vector{Float64}()
+ϵc_history = Vector{Float64}()
+global i = 1 # for tendon iteration
+global k = 1 # for concrete iteration
+global counter = 1
+while true
+    #force equilibrium
+    global δf += δϵc
+    
+    fps = δf * Es
 #Steel force
-fsteel = fpse_assump * as
+fsteel = fps * as
 #0.85 - 0.65 based on the fc' value
 
 #at the critical section
@@ -114,31 +137,51 @@ ac = fsteel/(0.85*getfc(ϵc_assump)) # [mm2] area of the concrete
 c = getdepth(ac) #work on this measure from the extreme compressive fiber (top) 
 
 #moment at the critical section 
-mc = fsteel * c - fsteel * d_c # [Nmm] moment at the critical section
+d = 150.0 # [mm] distance from the extreme compressive fiber (top) to the centroid of tendon
+mc = fsteel * (d-c) # [Nmm] moment at the critical section
+# println(mc/1e6, " kNm")
 
+ϵc_all = Vector{Float64}(undef, nL)
+ϵc_all[1] = ϵc_assump
 #get M from other places.
 for i = 2:nL #middle point already calculated, so start from 2.
     mi = momentval(setL[i])
-    di = tendon_pos[i]
-    fsteel = fpse_assump * as
+    di = tendon_pos #[i] #this might have to be updated more
+    fsteel = fps * as
     arm = mi/fsteel
     cg = d - arm
     c = 2*cg 
     #get ac from c 
-    ac = 200.0 # dummy, getac(c)
-    fc = fsteel/(0.85*ac)
+    ac =50.0*c
+    @show fc = fsteel/(0.85*ac)
+
+
     # from c get a
-    ac = fsteel/(0.85*getfc(ϵc_assump)) # [mm2] area of the concrete
+    ϵc_top = getϵ(fc)
+    ϵci = (di-c)/c*ϵc_top
+    #at di, calculate the ϵci of that point
+    ϵc_all[i] = ϵci
+    # force should be equal here.
+end
+
+ϵc_total = sum(ϵc_all)
+push!(ϵc_history, ϵc_total)
+push!(δf_history, δf)
+    global counter += 1
+
+    if abs(ϵc_total - δf) < tol || counter > 1000
+        break
+    end
+
+    @show δf = ϵc_total
 
 
-
-while abs(total_ϵc - δf) < tol
-    #force equilibrium
+end
 
     
+end
     
-    
-    ϵc_mid += δϵc
+    |ϵc_mid += δϵc
 
 
 #section should have started at the middle.
