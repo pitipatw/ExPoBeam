@@ -36,6 +36,8 @@ end
 begin
     st = 10.0 #step size of the force  inputs
     P_lb = 0:st:8300  #[lb] (This is based on the test data)
+    #try
+    P_lb = 0:st:10000
     P_N  = 4.448*P_lb # [N]
     P = P_N # This depends on what unit you want to use in the calculation.
     M = P*Ls/2.0 #given M inputs
@@ -102,6 +104,7 @@ axis_monitor2 = [Axis(gb[i,1],title = title_name2[i],ylabel = y2[i], xlabel = x2
 conv1 = 1
 counter1 = 0
 counter2 = 0
+max_iter = 1000
 for i in eachindex(M)
     Mi = M[i] 
     Lc = getLc(Sec,Mcr,Mi)
@@ -112,7 +115,7 @@ for i in eachindex(M)
     conv1 = 1
     while conv1 > 1e-6
         counter1 += 1 
-        if counter1 > 1000
+        if counter1 > max_iter
             println("Warning: 1st iteration did not converge")
             break
         end
@@ -124,7 +127,7 @@ for i in eachindex(M)
         while conv2 > 1e-6
             # println("counter")
             counter2 += 1 
-            if counter2 > 1000
+            if counter2 > max_iter
                 println("Warning: 2nd iteration did not converge")
                 break
             end
@@ -136,7 +139,7 @@ for i in eachindex(M)
             counter_c = 0 
             while conv_c > 1e-6 
                 counter_c += 1
-                if counter_c > 1000
+                if counter_c > max_iter
                     println("Warning: 3rd iteration did not converge")
                     break
                 end
@@ -238,10 +241,11 @@ plot!(axis_monitor2[2],test_d,test_P, label = "test", color = :red)
 fig3 = Figure(resolution = (800, 600))
 ax3 = Axis(fig3[1, 1], ylabel = "Force Diff [N]", xlabel = "Displacement [mm]")
 plot!(ax3,dis_history[1:end],P[1:end].-Mcr*2/Ls, label = "calc", color = :blue)
-plot!(axis_monitor2[2], dis_history, dis_history.*1000, label = "dis/1000", color = :green, markersize = 1)
+# plot!(axis_monitor2[2], dis_history, dis_history.*1000, label = "dis/1000", color = :green, markersize = 5)
 #plot 
 
 end
+fig3
 display(fig1)
 display(fig2)
 display(fig3)
