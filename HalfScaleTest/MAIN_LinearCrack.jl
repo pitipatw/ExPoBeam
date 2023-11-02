@@ -245,5 +245,5 @@ end
 display(fig1)
 display(fig2)
 display(fig3)
-save(joinpath(@__DIR__,"fig1.png"), fig1)
-save(joinpath(@__DIR__,"fig2.png"), fig2)
+save(joinpath(@__DIR__,"fig1_test.png"), fig1)
+save(joinpath(@__DIR__,"fig2_test.png"), fig2)
